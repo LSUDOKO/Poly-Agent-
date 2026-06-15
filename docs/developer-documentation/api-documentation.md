@@ -1,0 +1,403 @@
+# API Documentation
+
+PolyPay provides a comprehensive RESTful API for privacy-preserving payroll operations. This guide covers how to interact with the API using various methods.
+
+> The user identifier shown in the PolyPay UI as **Membership ID** is sent and received over the API as the JSON field `commitment`. The field name is preserved for backwards compatibility.
+
+## Quick Links
+
+- **Swagger UI (Interactive)**: `http://localhost:4000/api/swagger`
+- **OpenAPI JSON**: `http://localhost:4000/api/swagger-json`
+- **Backend Repository**: [packages/backend](../../packages/backend)
+
+## Accessing the API
+
+### 1. Swagger UI (Recommended)
+
+The easiest and most interactive way to explore and test the API.
+
+**URL**: `http://localhost:4000/api/swagger`
+
+**Features**:
+- Interactive endpoint testing with "Try it out" buttons
+- Complete schema documentation for requests and responses
+- Built-in authentication with JWT token persistence
+- Organized by feature tags (auth, users, accounts, etc.)
+- Real-time request/response examples
+
+**How to Use**:
+
+1. Start the backend server:
+   ```bash
+   cd packages/backend
+   yarn start:dev
+   ```
+
+2. Open Swagger UI in your browser:
+   ```
+   http://localhost:4000/api/swagger
+   ```
+
+3. Authenticate:
+   - First, use the `/api/auth/login` endpoint to get your JWT token
+   - Click the "Authorize" button (lock icon) at the top right
+   - Enter your token in the format: `Bearer <your-token>`
+   - Click "Authorize" - your token will persist for all subsequent requests
+
+4. Test Endpoints:
+   - Expand any endpoint section
+   - Click "Try it out"
+   - Fill in the required parameters
+   - Click "Execute"
+   - View the response below
+
+### 2. Postman or Insomnia
+
+Import the OpenAPI specification for a powerful REST client experience.
+
+**Import URL**: `http://localhost:4000/api/swagger-json`
+
+**Steps**:
+1. Open Postman/Insomnia
+2. Import → Link → Paste the Swagger JSON URL
+3. All endpoints will be automatically imported with schemas
+4. Set up authentication headers manually
+
+### 3. cURL (Command Line)
+
+Direct HTTP requests from the terminal.
+
+**Example - Login**:
+```bash
+curl -X POST http://localhost:4000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "commitment": "your-commitment-hash",
+    "proof": "your-zk-proof"
+  }'
+```
+
+**Example - Get Account (Authenticated)**:
+```bash
+curl -X GET http://localhost:4000/api/users/me \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+### 4. HTTPie (Enhanced Command Line)
+
+A more user-friendly alternative to cURL.
+
+**Installation**:
+```bash
+brew install httpie  # macOS
+pip install httpie   # Python
+```
+
+**Example - Login**:
+```bash
+http POST http://localhost:4000/api/auth/login \
+  commitment="your-commitment-hash" \
+  proof="your-zk-proof"
+```
+
+**Example - Get Account**:
+```bash
+http GET http://localhost:4000/api/users/me \
+  Authorization:"Bearer YOUR_JWT_TOKEN"
+```
+
+## API Structure
+
+### Base URL
+
+```
+http://localhost:4000/api
+```
+
+### Endpoints by Feature
+
+#### Authentication (`/api/auth`)
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/auth/login` | Login with ZK proof | No |
+| POST | `/auth/refresh` | Refresh access token | No |
+
+#### Accounts (`/api/users`)
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/users` | Create new user | No |
+| GET | `/users/me` | Get current user | Yes |
+| GET | `/users/me/accounts` | Get user's accounts | Yes |
+
+#### Wallets (`/api/accounts`)
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/accounts` | Create new account | Yes |
+| GET | `/accounts/:address` | Get account details | Yes |
+| PATCH | `/accounts/:address` | Update account | Yes |
+
+
+#### Transactions (`/api/transactions`)
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/transactions` | Create transaction | Yes |
+| GET | `/transactions` | List transactions | Yes |
+| GET | `/transactions/:id` | Get transaction details | Yes |
+| POST | `/transactions/:id/approve` | Approve transaction | Yes |
+| POST | `/transactions/:id/deny` | Deny transaction | Yes |
+| POST | `/transactions/:id/execute` | Execute approved transaction | Yes |
+
+#### Batch Items (`/api/batch-items`)
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/batch-items` | Create batch item | Yes |
+| GET | `/batch-items` | List batch items | Yes |
+
+#### Address Book (`/api/contact-book`)
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/contact-book/groups` | Create address group | Yes |
+| GET | `/contact-book/groups` | List groups | Yes |
+| PATCH | `/contact-book/groups/:id` | Update group | Yes |
+| DELETE | `/contact-book/groups/:id` | Delete group | Yes |
+| POST | `/contact-book/contacts` | Add contact | Yes |
+| GET | `/contact-book/contacts` | List contacts | Yes |
+| PATCH | `/contact-book/contacts/:id` | Update contact | Yes |
+| DELETE | `/contact-book/contacts/:id` | Delete contact | Yes |
+
+#### Prices (`/api/prices`)
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | `/prices` | Get token prices | No |
+
+#### Feature Requests (`/api/feature-requests`)
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/feature-requests` | Submit feature request | Yes |
+
+<!-- Quest, Leaderboard & Claim endpoints temporarily hidden — kept for future reuse. -->
+<!--
+#### Quests (`/api/quests`)
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | `/quests` | List active quests | No |
+| GET | `/quests/leaderboard` | Get paginated leaderboard | No |
+| GET | `/quests/leaderboard/top` | Get top 3 users | No |
+| GET | `/quests/leaderboard/me` | Get current user rank & points | Yes |
+| GET | `/quests/my-points` | Get current user points & history | Yes |
+
+#### Claims (`/api/claims`)
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | `/claims/summary` | Get claim summary for all weeks | Yes |
+| POST | `/claims` | Claim weekly reward | Yes |
+-->
+
+#### x402 Gasless USDC Deposit (`/api/x402`)
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | `/x402/deposit/:multisigAddress` | Returns HTTP 402 with x402 v1 payment requirements for the multisig | No |
+| POST | `/x402/deposit/:multisigAddress` | Settles an EIP-3009 USDC deposit through an x402 facilitator. Requires `X-PAYMENT` header with a base64 x402 v1 payment payload. | No |
+
+See [Gasless USDC Deposits (x402)](../x402-deposits.md) for the full integration guide, request/response shapes, supported networks, limits, and security model.
+
+## Authentication
+
+PolyPay uses JWT (JSON Web Tokens) for authentication.
+
+### Getting a Token
+
+1. **Login** via `/api/auth/login` with your zero-knowledge proof:
+   ```json
+   {
+     "commitment": "your-commitment-hash",
+     "proof": "your-zk-proof"
+   }
+   ```
+
+2. **Response** includes access and refresh tokens:
+   ```json
+   {
+     "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+     "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+   }
+   ```
+
+### Using the Token
+
+Include the access token in the `Authorization` header:
+
+```
+Authorization: Bearer <your-access-token>
+```
+
+### Token Expiration
+
+- **Access Token**: Expires after 15 minutes
+- **Refresh Token**: Expires after 7 days
+
+When your access token expires, use the refresh token at `/api/auth/refresh`:
+
+```json
+{
+  "refreshToken": "your-refresh-token"
+}
+```
+
+## Request/Response Format
+
+### Content Type
+
+All requests and responses use JSON:
+
+```
+Content-Type: application/json
+```
+
+### Standard Response Format
+
+**Success Response**:
+```json
+{
+  "id": "resource-id",
+  "field1": "value1",
+  "field2": "value2",
+  "createdAt": "2024-01-01T00:00:00Z",
+  "updatedAt": "2024-01-01T00:00:00Z"
+}
+```
+
+**Error Response**:
+```json
+{
+  "statusCode": 400,
+  "message": "Validation failed",
+  "error": "Bad Request"
+}
+```
+
+## Common Status Codes
+
+| Code | Meaning | Description |
+|------|---------|-------------|
+| 200 | OK | Request successful |
+| 201 | Created | Resource created successfully |
+| 400 | Bad Request | Invalid request data |
+| 401 | Unauthorized | Missing or invalid authentication |
+| 402 | Payment Required | x402 discovery response — caller must include a valid `X-PAYMENT` header to retry |
+| 403 | Forbidden | Insufficient permissions |
+| 404 | Not Found | Resource not found |
+| 409 | Conflict | Resource conflict (duplicate) |
+| 429 | Too Many Requests | Rate limit exceeded (per IP or per multisig) |
+| 500 | Internal Server Error | Server error |
+
+## Rate Limiting
+
+Most endpoints are not rate limited. The x402 deposit endpoint applies the following caps:
+
+| Scope | Limit |
+|-------|-------|
+| `GET /api/x402/deposit/:multisigAddress` per IP | 60 requests / 60s |
+| `POST /api/x402/deposit/:multisigAddress` per IP | 10 requests / 60s |
+| `POST /api/x402/deposit/:multisigAddress` per multisig | 30 requests / 60s |
+
+## CORS Configuration
+
+The API allows cross-origin requests from:
+- `http://localhost:3000` (default frontend)
+- Configurable via `CORS_ORIGIN` environment variable
+
+## WebSocket Support
+
+Real-time notifications are available via WebSocket at:
+
+```
+ws://localhost:4000
+```
+
+## OpenAPI Specification
+
+The full OpenAPI 3.0 specification is available at:
+
+```
+http://localhost:4000/api/swagger-json
+```
+
+Use this for:
+- Generating client SDKs
+- Importing into API testing tools
+- Automated API documentation
+- Contract testing
+
+## Example: Complete Authentication Flow
+
+### 1. Create Account
+
+```bash
+curl -X POST http://localhost:4000/api/users \
+  -H "Content-Type: application/json" \
+  -d '{
+    "commitment": "0x1234567890abcdef...",
+  }'
+```
+
+### 2. Login
+
+```bash
+curl -X POST http://localhost:4000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "commitment": "0x1234567890abcdef...",
+    "proof": "0xproof..."
+  }'
+```
+
+**Response**:
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+### 3. Access Protected Endpoint
+
+```bash
+curl -X GET http://localhost:4000/api/users/me \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+### 4. Refresh Token (When Expired)
+
+```bash
+curl -X POST http://localhost:4000/api/auth/refresh \
+  -H "Content-Type: application/json" \
+  -d '{
+    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }'
+```
+
+## Additional Resources
+
+- [Getting Started](./getting-started.md) - Project setup guide
+- [Architecture](../architecture.md) - System architecture overview
+- [Zero-Knowledge Implementation](../zero-knowledge-implementation.md) - ZK proof details
+- [GitBook Documentation](https://q3labs.gitbook.io/polypay) - Full documentation
+
+## Support
+
+If you encounter issues with the API:
+1. Check the Swagger UI for endpoint documentation
+2. Review the backend logs for error details
+3. Open an issue on [GitHub](https://github.com/Poly-pay/polypay_app/issues)

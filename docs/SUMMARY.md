@@ -1,0 +1,19 @@
+# Table of contents
+
+- [Introduction](README.md)
+- [How to use Polypay App](how-to-use-polipay-app.md)
+<!-- Quest & Leaderboard temporarily hidden — kept for future reuse. -->
+<!-- - [Quest & Leaderboard](quest-and-leaderboard.md) -->
+- [Privacy Architecture](privacy-architecture.md)
+- [Zero-Knowledge Implementation](zero-knowledge-implementation.md)
+- [ZK Authentication](zk-authentication.md)
+- [zkVerify, Horizen & Base Integration](zkverify-horizen-integration.md)
+- [Arbitrum Stylus Support](arbitrum-stylus.md)
+- [Gasless USDC Deposits (x402)](x402-deposits.md)
+- [PolyPay for AI Agents](llms-txt-for-agents.md)
+- [Architecture](architecture.md)
+- [Developer Documentation](developer-documentation/README.md)
+  - [Getting Started](developer-documentation/getting-started.md)
+  - [API Documentation](developer-documentation/api-documentation.md)
+  - [Database Connection Guide](developer-documentation/database-connection-guide.md)
+  - [Circuit Code Walkthrough](developer-documentation/circuit-code-walkthrough.md)

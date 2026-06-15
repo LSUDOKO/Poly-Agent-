@@ -18,8 +18,8 @@ import { useAppRouter } from "~~/hooks/app/useRouteApp";
 import { useSocketConnection } from "~~/hooks/app/useSocketConnection";
 import { queryClient } from "~~/services/queryClient";
 import { useIdentityStore } from "~~/services/store";
-import { Web3AuthAppProvider } from "~~/services/web3/web3auth";
 import { wagmiConfig } from "~~/services/web3/wagmiConfig";
+import { Web3AuthAppProvider } from "~~/services/web3/web3auth";
 
 const ScaffoldEthApp = ({ children }: { children: React.ReactNode }) => {
   useMobileDetection();

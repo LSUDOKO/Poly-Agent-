@@ -50,6 +50,8 @@ jobs:
             --build-arg NEXT_PUBLIC_NETWORK=${{ vars.NEXT_PUBLIC_NETWORK }} \
             --build-arg NEXT_PUBLIC_FEATURE_X402_DEPOSIT=${{ vars.NEXT_PUBLIC_FEATURE_X402_DEPOSIT }} \
             --build-arg NEXT_PUBLIC_ENABLE_MOBILE_BLOCK=${{ vars.NEXT_PUBLIC_ENABLE_MOBILE_BLOCK }} \
+            --build-arg NEXT_PUBLIC_WEB3AUTH_CLIENT_ID=${{ vars.NEXT_PUBLIC_WEB3AUTH_CLIENT_ID }} \
+            --build-arg NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=${{ vars.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID }} \
             -f docker/frontend.Dockerfile \
             -t ${GCP_LOCATION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_REPOSITORY}/${GCP_IMAGE}:${SHORT_SHA} \
             .

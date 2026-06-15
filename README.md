@@ -32,58 +32,175 @@ PolyAgent is a multi-chain payroll system that lets organizations, DAOs, and glo
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         PolyAgent Frontend                          │
-│                                                                     │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌───────────────────┐  │
-│  │RainbowKit │  │ Web3Auth │  │  Venice  │  │  Smart Account    │  │
-│  │(EOA/MM)   │  │(Social)  │  │  AI Chat │  │  Upgrade Flow     │  │
-│  └────┬─────┘  └────┬─────┘  └────┬──────┘  └────────┬──────────┘  │
-│       │              │              │                  │            │
-│  ┌────▼──────────────▼──────────────▼──────────────────▼──────────┐ │
-│  │                     wagmi + viem (EVM layer)                    │ │
-│  │          useWalletClient · usePublicClient · useAccount         │ │
-│  └────────────────────────────┬───────────────────────────────────┘ │
-└───────────────────────────────┼─────────────────────────────────────┘
-                                │
-┌───────────────────────────────▼─────────────────────────────────────┐
-│                        Backend (NestJS + Prisma)                     │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐  │
-│  │   Auth   │ │ Account  │ │   Tx     │ │ Notifica- │ │   ZK     │  │
-│  │ (JWT+ZK) │ │ Mgmt     │ │  Engine  │ │  tion     │ │  Verify  │  │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘  │
-│                         ┌──────────┐                               │
-│                         │PostgreSQL│                               │
-│                         └──────────┘                               │
-└───────────────────────────────┬─────────────────────────────────────┘
-                                │
-┌───────────────────────────────▼─────────────────────────────────────┐
-│                     Blockchain Layer                                 │
-│                                                                     │
-│  ┌──────────────────────────────────────────────────────────────┐  │
-│  │                    MetaMultiSigWallet                         │  │
-│  │  • ZK proof verification (UltraHonk + zkVerify aggregation)   │  │
-│  │  • PoseidonT3 hashing for Noir circuit compatibility          │  │
-│  │  • execute() · addSigners() · removeSigners() · batchTransfer │  │
-│  └──────────┬──────────┬──────────┬──────────────────────────────┘  │
-│             │          │          │                                 │
-│     Horizen │    Base  │  Arbitrum│ (Stylus Rust/WASM via proxy)    │
-│             │          │          │                                 │
-│  ┌──────────▼──────────▼──────────▼──────────────────────────────┐ │
-│  │                    zkVerify Contract                           │ │
-│  │  On-chain proof aggregation — verifies Merkle proofs against  │ │
-│  │  a stored root, proving a signer's commitment is in the set   │ │
-│  └───────────────────────────────────────────────────────────────┘ │
-│                                                                     │
-│  ┌──────────────────────────────────────────────────────────────┐  │
-│  │                    Smart Account (ERC-7572)                    │ │
-│  │  • MetaMask Hybrid implementation                             │ │
-│  │  • ERC-7715 execution permissions                             │ │
-│  │  • ERC-7710 delegation scopes with caveats                   │ │
-│  │  • Enables gasless x402 via permission grants                 │ │
-│  └──────────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph Users["👥 Users"]
+        A[Human via Browser]
+        B[AI Agent via API]
+    end
+
+    subgraph Frontend["🖥️ PolyAgent Frontend (Next.js 15)"]
+        subgraph UI["UI Layer"]
+            C[RainbowKit Connect Button]
+            D[Web3Auth Social Login]
+            E[Sidebar & Navigation]
+            F[Venice AI Chat UI]
+            G[Smart Account Upgrade Modal]
+            H[Permission Request Modal]
+            I[Deposit Modal x402]
+            J[Dashboard & Transfer Pages]
+        end
+
+        subgraph State["State Management"]
+            K[Zustand Stores<br/>identity · account · smartAccount · sidebar]
+            L[TanStack React Query<br/>API cache · tx invalidation]
+        end
+
+        subgraph Hooks["React Hooks Layer"]
+            M[useSmartAccount<br/>upgrade · deploy · getAccount]
+            N[useAdvancedPermissions<br/>request · grant · check]
+            O[useVeniceAI<br/>askAssistant · analyzeTx]
+            P[useWeb3AuthLogin<br/>connect · logout]
+            Q[useX402Deposit<br/>deposit · useDelegation]
+            R[useSocketEvent<br/>real-time notifications]
+        end
+
+        subgraph Web3["Web3 Layer (wagmi + viem)"]
+            S[useWalletClient<br/>signer management]
+            T[usePublicClient<br/>RPC reads]
+            U[useAccount<br/>address · chain · status]
+            V[useConnect · useDisconnect]
+        end
+
+        subgraph Services["Services"]
+            W[web3auth.tsx<br/>Web3Auth Provider Config]
+            X[smartAccount.ts<br/>toMetaMaskSmartAccount]
+            Y[permissions.ts<br/>ERC-7715 helpers]
+            Z[venice.ts<br/>OpenAI client]
+            AA[x402Api.ts<br/>gasless deposit]
+            AB[apiClient.ts<br/>Axios + JWT interceptor]
+        end
+    end
+
+    subgraph Backend["⚙️ NestJS Backend (Port 4000)"]
+        AC[Auth Module<br/>JWT · ZK proof verification]
+        AD[Account Module<br/>CRUD · multi-sig mgmt]
+        AE[Transaction Module<br/>CRUD · approve · deny · execute]
+        AF[User Module<br/>commitment · ZK identity]
+        AG[Notification Module<br/>WebSocket · real-time]
+        AH[Quest Module<br/>gamification · points]
+        AI[Admin Module<br/>analytics]
+        AJ[ZK Verify Module<br/>proof validation]
+        AK[Prisma ORM<br/>PostgreSQL]
+    end
+
+    subgraph SmartContracts["⛓️ Smart Contracts"]
+        subgraph HorizenBase["Horizen & Base (Solidity)"]
+            AL[MetaMultiSigWallet<br/>ZK multisig · execute<br/>addSigners · batchTransfer]
+            AM[zkVerify Contract<br/>on-chain proof aggregation]
+            AN[PoseidonT3<br/>ZK circuit hash]
+        end
+
+        subgraph Arbitrum["Arbitrum (Stylus Rust/WASM)"]
+            AO[Stylus Implementation<br/>~29KB WASM<br/>MetaMultiSig logic]
+            AP[EIP-1167 Proxy Factory<br/>per-user ~52B proxy]
+        end
+
+        subgraph SmartAccountChain["Smart Account Layer"]
+            AQ[MetaMask Smart Account<br/>Hybrid Implementation]
+            AR[ERC-7715 Permissions<br/>execution permissions]
+            AS[ERC-7710 Delegations<br/>scope + caveat enforcers]
+        end
+    end
+
+    subgraph External["🌐 External Services"]
+        AT[Venice AI API<br/>api.venice.ai/api/v1]
+        AU[Web3Auth Network<br/>Sapphire Devnet/Mainnet]
+        AV[zkVerify Aggregator<br/>proof batch verification]
+        AW[x402 Facilitator<br/>gasless USDC relay]
+        AX[WalletConnect<br/>rainbow bridge]
+    end
+
+    %% Frontend connections
+    C --> S
+    D --> P
+    P --> W
+    W --> AU
+    F --> O
+    O --> Z
+    Z --> AT
+    G --> M
+    M --> X
+    X --> AQ
+    H --> N
+    N --> Y
+    N --> AR
+    I --> Q
+    Q --> AA
+    Q --> AS
+    AA --> AW
+
+    %% Hook → Web3 layer
+    M --> S
+    M --> T
+    N --> V
+    Q --> S
+    Q --> T
+    R --> AG
+
+    %% Web3 → Contract layer
+    S --> AL
+    S --> AQ
+    T --> AL
+    T --> AM
+    T --> AQ
+
+    %% Smart Account → Permissions
+    AQ --> AR
+    AR --> AS
+    AS --> AW
+
+    %% Backend connections
+    AC --> AY
+    AD --> AL
+    AE --> AL
+    AF --> AY
+    AJ --> AM
+    AJ --> AV
+    AK --> AL
+
+    %% Frontend ↔ Backend
+    AB --> AC
+    AB --> AD
+    AB --> AE
+    AB --> AF
+    AB --> AG
+
+    %% Real-time
+    AG --> R
+
+    %% Stylus specific
+    AO --> AP
+    AP --> AO
+
+    classDef frontend fill:#6366f1,color:#fff,stroke:#4338ca
+    classDef backend fill:#059669,color:#fff,stroke:#047857
+    classDef contract fill:#dc2626,color:#fff,stroke:#b91c1c
+    classDef external fill:#6b7280,color:#fff,stroke:#4b5563
+    classDef ui fill:#8b5cf6,color:#fff,stroke:#7c3aed
+    classDef state fill:#ec4899,color:#fff,stroke:#db2777
+    classDef hooks fill:#14b8a6,color:#fff,stroke:#0d9488
+    classDef web3 fill:#3b82f6,color:#fff,stroke:#2563eb
+    classDef services fill:#f97316,color:#fff,stroke:#ea580c
+
+    class C,D,E,F,G,H,I,J ui
+    class K,L state
+    class M,N,O,P,Q,R hooks
+    class S,T,U,V web3
+    class W,X,Y,Z,AA,AB services
+    class AC,AD,AE,AF,AG,AH,AI,AJ,AK backend
+    class AL,AM,AN,AO,AP,AQ,AR,AS contract
+    class AT,AU,AV,AW,AX external
 ```
 
 ---
